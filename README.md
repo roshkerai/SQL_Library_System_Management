@@ -128,8 +128,8 @@ SELECT * FROM books;
 
 ```sql
 UPDATE members
-SET member_address = '125 Oak St'
-WHERE member_id = 'C103';
+SET member_address = '125 Main St'
+WHERE member_id = 'C101';
 ```
 
 **Task 3: Delete a Record from the Issued Status Table**
@@ -153,11 +153,11 @@ WHERE issued_emp_id = 'E101'
 
 ```sql
 SELECT
-    issued_emp_id,
-    COUNT(*)
+    issued_member_id,
+    COUNT(issued_book_name) as Number_of_issues -- Don't need this line
 FROM issued_status
-GROUP BY 1
-HAVING COUNT(*) > 1
+GROUP BY issued_member_id
+HAVING COUNT(issued_book_name) > 1
 ```
 
 ### 3. CTAS (Create Table As Select)
@@ -165,12 +165,17 @@ HAVING COUNT(*) > 1
 - **Task 6: Create Summary Tables**: Used CTAS to generate new tables based on query results - each book and total book_issued_cnt**
 
 ```sql
-CREATE TABLE book_issued_cnt AS
-SELECT b.isbn, b.book_title, COUNT(ist.issued_id) AS issue_count
-FROM issued_status as ist
-JOIN books as b
+CREATE TABLE book_cnts
+AS
+SELECT 
+	b.isbn,
+	b.book_title,
+	COUNT(ist.issued_id) as no_issued
+FROM books as b
+JOIN
+issued_status as ist
 ON ist.issued_book_isbn = b.isbn
-GROUP BY b.isbn, b.book_title;
+GROUP BY 1, 2;
 ```
 
 
