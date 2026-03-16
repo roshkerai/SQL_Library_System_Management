@@ -244,7 +244,7 @@ WHERE rs.return_id IS NULL;
 ## Advanced SQL Operations
 
 **Task 13: Identify Members with Overdue Books**  
-Write a query to identify members who have overdue books (assume a 30-day return period). Display the member's_id, member's name, book title, issue date, and days overdue.
+Write a query to identify members who have overdue books (assume a 30-day return period) from today '2024-08-24'. Display the member's_id, member's name, book title, issue date, and days overdue.
 
 ```sql
 SELECT 
@@ -253,7 +253,7 @@ SELECT
     bk.book_title,
     ist.issued_date,
     -- rs.return_date,
-    CURRENT_DATE - ist.issued_date as over_dues_days
+    '2024-08-24'::date - ist.issued_date as over_dues_days
 FROM issued_status as ist
 JOIN 
 members as m
@@ -267,7 +267,7 @@ ON rs.issued_id = ist.issued_id
 WHERE 
     rs.return_date IS NULL
     AND
-    (CURRENT_DATE - ist.issued_date) > 30
+    ('2024-08-24'::date - ist.issued_date) > 30
 ORDER BY 1
 ```
 
@@ -368,7 +368,7 @@ SELECT * FROM branch_reports;
 ```
 
 **Task 16: CTAS: Create a Table of Active Members**  
-Use the CREATE TABLE AS (CTAS) statement to create a new table active_members containing members who have issued at least one book in the last 2 months.
+Use the CREATE TABLE AS (CTAS) statement to create a new table active_members containing members who have issued at least one book in the last 2 months from '2024-08-24'.
 
 ```sql
 
@@ -379,7 +379,7 @@ WHERE member_id IN (SELECT
                         DISTINCT issued_member_id   
                     FROM issued_status
                     WHERE 
-                        issued_date >= CURRENT_DATE - INTERVAL '2 month'
+                        issued_date >= '2024-08-24'::date - INTERVAL '2 month'
                     )
 ;
 
@@ -444,7 +444,7 @@ BEGIN
 
         INSERT INTO issued_status(issued_id, issued_member_id, issued_date, issued_book_isbn, issued_emp_id)
         VALUES
-        (p_issued_id, p_issued_member_id, CURRENT_DATE, p_issued_book_isbn, p_issued_emp_id);
+        (p_issued_id, p_issued_member_id, '2024-08-24'::date, p_issued_book_isbn, p_issued_emp_id);
 
         UPDATE books
             SET status = 'no'
