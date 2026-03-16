@@ -176,6 +176,9 @@ JOIN
 issued_status as ist
 ON ist.issued_book_isbn = b.isbn
 GROUP BY 1, 2;
+
+SELECT * FROM
+book_cnts;
 ```
 
 
@@ -183,66 +186,68 @@ GROUP BY 1, 2;
 
 The following SQL queries were used to address specific questions:
 
-Task 7. **Retrieve All Books in a Specific Category**:
+**Task 7. Retrieve All Books in a Specific Category**:
 
 ```sql
 SELECT * FROM books
 WHERE category = 'Classic';
 ```
 
-8. **Task 8: Find Total Rental Income by Category**:
+**Task 8: Find Total Rental Income by Category**:
 
 ```sql
-SELECT 
-    b.category,
-    SUM(b.rental_price),
-    COUNT(*)
-FROM 
-issued_status as ist
+SELECT
+	b.category,
+	SUM(b.rental_price),
+	COUNT(*)
+FROM books as b
 JOIN
-books as b
-ON b.isbn = ist.issued_book_isbn
-GROUP BY 1
+issued_status as ist
+ON ist.issued_book_isbn = b.isbn
+GROUP BY 1;
 ```
 
-9. **List Members Who Registered in the Last 180 Days**:
+**Task 9: List Members Who Registered in the Last 180 Days**:
 ```sql
 SELECT * FROM members
 WHERE reg_date >= CURRENT_DATE - INTERVAL '180 days';
 ```
 
-10. **List Employees with Their Branch Manager's Name and their branch details**:
+**Task 10: List Employees with Their Branch Manager's Name and their branch details**:
 
 ```sql
 SELECT 
-    e1.emp_id,
-    e1.emp_name,
-    e1.position,
-    e1.salary,
-    b.*,
-    e2.emp_name as manager
+	e1.*,
+	b.manager_id,
+	e2.emp_name as manager
 FROM employees as e1
 JOIN 
-branch as b
-ON e1.branch_id = b.branch_id    
+	branch as b
+ON b.branch_id = e1.branch_id
 JOIN
 employees as e2
-ON e2.emp_id = b.manager_id
+ON b.manager_id = e2.emp_id
 ```
 
-Task 11. **Create a Table of Books with Rental Price Above a Certain Threshold**:
+**Task 11: Create a Table of Books with Rental Price Above a Certain Threshold (E.g. 7 USD)**:
 ```sql
-CREATE TABLE expensive_books AS
+CREATE TABLE books_price_greater_than_seven
+AS
 SELECT * FROM books
-WHERE rental_price > 7.00;
+WHERE rental_price > 7;
+
+SELECT * FROM
+books_price_greater_than_seven;
 ```
 
-Task 12: **Retrieve the List of Books Not Yet Returned**
+**Task 12: Retrieve the List of Books Not Yet Returned**
 ```sql
-SELECT * FROM issued_status as ist
-LEFT JOIN
+SELECT 
+	DISTINCT ist.issued_book_name
+FROM issued_status as ist
+LEFT JOIN 
 return_status as rs
-ON rs.issued_id = ist.issued_id
+ON  ist.issued_id = rs.issued_id
 WHERE rs.return_id IS NULL;
 ```
 
@@ -278,49 +283,48 @@ ORDER BY 1
 
 
 **Task 14: Update Book Status on Return**  
-Write a query to update the status of books in the books table to "Yes" when they are returned (based on entries in the return_status table).
+Write a query to update the status of books in the books table to "Yes" when they are returned (based on entries in the return_status table). Todays date is '2024-08-24'.
 
 
 ```sql
 
-CREATE OR REPLACE PROCEDURE add_return_records(p_return_id VARCHAR(10), p_issued_id VARCHAR(10), p_book_quality VARCHAR(10))
+CREATE OR REPLACE PROCEDURE add_return_records(p_return_id VARCHAR(10), p_issued_id VARCHAR(10), p_book_quality VARCHAR(15))
 LANGUAGE plpgsql
 AS $$
 
 DECLARE
-    v_isbn VARCHAR(50);
-    v_book_name VARCHAR(80);
-    
+	v_isbn VARCHAR(50);
+	v_book_name VARCHAR(80);
+
 BEGIN
-    -- all your logic and code
-    -- inserting into returns based on users input
-    INSERT INTO return_status(return_id, issued_id, return_date, book_quality)
-    VALUES
-    (p_return_id, p_issued_id, CURRENT_DATE, p_book_quality);
+	-- all your logic and code
+	-- inserting into returns based on users input
+	INSERT INTO return_status(return_id, issued_id, return_date, book_quality)
+	VALUES
+	(p_return_id, p_issued_id, '2024-08-24'::date, p_book_quality);
 
-    SELECT 
-        issued_book_isbn,
-        issued_book_name
-        INTO
-        v_isbn,
-        v_book_name
-    FROM issued_status
-    WHERE issued_id = p_issued_id;
+	SELECT
+		issued_book_isbn,
+		issued_book_name
+		INTO
+		v_isbn,
+		v_book_name
+	FROM issued_status
+	WHERE issued_id = p_issued_id;
 
-    UPDATE books
-    SET status = 'yes'
-    WHERE isbn = v_isbn;
+	UPDATE books
+	SET status = 'yes'
+	WHERE isbn = v_isbn ;
 
-    RAISE NOTICE 'Thank you for returning the book: %', v_book_name;
-    
+	RAISE NOTICE 'Thank you for returning the book: %', v_book_name;
+
 END;
 $$
-
 
 -- Testing FUNCTION add_return_records
 
 issued_id = IS135
-ISBN = WHERE isbn = '978-0-307-58837-1'
+ISBN = WHERE isbn = '978-0-307-58837-1';
 
 SELECT * FROM books
 WHERE isbn = '978-0-307-58837-1';
@@ -331,10 +335,11 @@ WHERE issued_book_isbn = '978-0-307-58837-1';
 SELECT * FROM return_status
 WHERE issued_id = 'IS135';
 
--- calling function 
+-- Calling Function
 CALL add_return_records('RS138', 'IS135', 'Good');
 
--- calling function 
+
+-- Calling Function
 CALL add_return_records('RS148', 'IS140', 'Good');
 
 ```
@@ -411,11 +416,7 @@ ON e.branch_id = b.branch_id
 GROUP BY 1, 2
 ```
 
-**Task 18: Identify Members Issuing High-Risk Books**  
-Write a query to identify members who have issued books more than twice with the status "damaged" in the books table. Display the member name, book title, and the number of times they've issued damaged books.    
-
-
-**Task 19: Stored Procedure**
+**Task 18: Stored Procedure**
 Objective:
 Create a stored procedure to manage the status of books in a library system.
 Description:
@@ -477,20 +478,6 @@ SELECT * FROM books
 WHERE isbn = '978-0-375-41398-8'
 
 ```
-
-
-
-**Task 20: Create Table As Select (CTAS)**
-Objective: Create a CTAS (Create Table As Select) query to identify overdue books and calculate fines.
-
-Description: Write a CTAS query to create a new table that lists each member and the books they have issued but not returned within 30 days. The table should include:
-    The number of overdue books.
-    The total fines, with each day's fine calculated at $0.50.
-    The number of books issued by each member.
-    The resulting table should show:
-    Member ID
-    Number of overdue books
-    Total fines
 
 
 
